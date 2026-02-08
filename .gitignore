@@ -1,0 +1,7 @@
+private/ 
+# If you write a pattern without a /, it matches anywhere in the repository.
+# private
+# private/
+# src/private
+# src/private/
+# a/b/c/private
