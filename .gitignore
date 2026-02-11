@@ -5,3 +5,7 @@ private/
 # src/private
 # src/private/
 # a/b/c/private
+
+venv/
+.env
+datasets/*.csv
