@@ -3,8 +3,9 @@ from typing import List
 from fastapi.middleware.cors import CORSMiddleware
 from backend.env import config
 from backend.db.connect import get_db_session, SessionLocal
-from backend.db.schemas import FlightPriceSchema, FlightPriceDetailSchema
-from backend.db import utils as db_utils
+
+from backend.db import schemas as db_schemas, utils as db_utils
+from backend.ai import predict
 
 DEBUG = config("DEBUG", cast=bool, default=False)
 FRONTEND_ORIGINS = config("FRONTEND_ORIGINS", cast=lambda x: [s.strip() for s in x.split(",")], default="http://localhost:3000")
@@ -38,13 +39,37 @@ def write_hello_world():
         "Debug": DEBUG
     }
 
-@app.get("/flights/", response_model=List[FlightPriceSchema])
+@app.post("/predict")
+def write_to_predict(prediction_req:db_schemas.PredictSchema):
+    print(prediction_req)
+    request_data = prediction_req.model_dump()
+    predictions = predict.predict_query(
+    flightDate="2022-04-21",
+    startingAirport=request_data.get("startingAirport"),
+    
+    destinationAirport=request_data.get("destinationAirport")
+    )
+    return {
+        "prediction": predictions
+    }
+
+
+    
+
+@app.get("/flights/", response_model=List[db_schemas.FlightPriceSchema])
 def read_flight_prices(offset: int = 0, limit: int = 100, db_session: SessionLocal = Depends(get_db_session)):
     return db_utils.get_flight_prices(db_session, offset=offset, limit=limit)
 
 
 
-@app.get("/flights/{flight_price}", response_model=FlightPriceDetailSchema)
+@app.get("/airports/", response_model=List[db_schemas.AirportSchema])
+def read_flight_prices(offset: int = 0, limit: int = 100, db_session: SessionLocal = Depends(get_db_session)):
+    print("airport coming..")
+    
+    return db_utils.get_airports(db_session, offset=offset, limit=limit)
+
+
+@app.get("/flights/{flight_price}", response_model=db_schemas.FlightPriceDetailSchema)
 def read_flight_prices(flight_price: int, db_session: SessionLocal = Depends(get_db_session)):
     db_flight_value =  db_utils.get_flight_price(db_session, flight_price)
     if db_flight_value is None:
