@@ -1,64 +1,82 @@
-import { API_BASE_URL } from '@/app/utils/apiClient'
-import { useState } from 'react'
+"use client"
 
-import AirportDropdown from '@/app/airports/dropdown'
+import {useState} from 'react'
+import {API_BASE_URL} from '@/app/utils/apiClient'
+
+import AirportDropdown from "@/app/airports/dropdown"
 import PredictionResultTable from './tables';
 
-
 export default function FlightPredictForm(props) {
-  const [startAirportVal, setStartAirportVal] = useState("jfk") 
-  const [endAirportVal, setEndAirportVal] = useState("lax") 
-  const [predictData, setPredictData] = useState({
-    loading: false,
-    predictions: []
-  })
+    const [startAirportVal, setStartAirportVal] = useState("jfk")
+    const [endAirportVal, setEndAirportVal] = useState("lax")
+    const [predictData, setPredictData] = useState({
+        loading: false
+    })
 
-  const btnLabel = predictData.loading ? "Loading.." : "Help me"
-  const btnClassName =  predictData.loading ? "btn-disabled" : "btn-primary" 
+    const handleSubmit = async (event) => {
+        event.preventDefault()
+        if (!predictData.loading) {
+            setPredictData(prev=>({
+                ...prev,
+                loading: true
+            }))
+            const formData = new FormData(event.target)
+            const formObj = Object.fromEntries(formData.entries())
+            
+            formObj.isNonStop = formData.has("isNonStop")      
+            formObj.isBasicEconomy = formData.has("isBasicEconomy")
+            formObj.isRefundable = formData.has("isRefundable")
 
-  const handleSubmit = async (event) => {
-    event.preventDefault()
-    if(!predictData.loading){
-      setPredictData(prev => ({ ...prev, loading: true }))
-      const formData = new FormData(event.target)
-      const formObj = Object.fromEntries(formData.entries())
-      formObj.isNonStop = formObj.isNonStop === "true"
-      formObj.isBasicEconomy = formObj.isBasicEconomy === "true"
-      formObj.isRefundable = formObj.isRefundable === "true"
+            const jsonData = JSON.stringify(formObj)
 
-      const response = await fetch(`${API_BASE_URL}/predict`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formObj)
-      })
-      const data = await response.json()
-      console.log(data)
+            const endpoint = `${API_BASE_URL}/predict`
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: jsonData
+            })
+            const data = await response.json()
+            setPredictData(prev=>({
+                ...prev,
+                loading: false,
+                ...data
+                // predictions: data && data.predictions ? [...data.predictions] : []
+            }))
+        }
 
-      setPredictData(prev => ({
-        ...prev,
-        loading: false,
-        predictions: data && data.prediction ? data.prediction : []
-      }))
     }
-  }
 
-  return (
-    <div>
-      <form onSubmit={handleSubmit}>
-        <AirportDropdown 
-          name='startingAirport' 
-          value={startAirportVal}
-          onChange={e => setStartAirportVal(e.target.value)} 
-        />
-        <AirportDropdown 
-          name='destinationAirport' 
-          value={endAirportVal}
-          onChange={e => setEndAirportVal(e.target.value)}
-          filterval={startAirportVal} 
-        />
+    const btnClassName = predictData.loading ? "btn-disabled" : "btn-primary"
+    const btnLabel = predictData.loading ? "Loading...": "Help me"
+    return <div><form className="space-y-2 md:space-y-3" onSubmit={handleSubmit}>
+        <div className="grid md:grid-cols-2 md:gap-3">
+            <div>
+                <label htmlFor='startingAirport'>
+                        
+                Starting Airport
+                    </label>
+                <AirportDropdown 
+                    name='startingAirport' 
+                    value={startAirportVal}
+                    onChange={e => setStartAirportVal(e.target.value)} />
+                    </div>
+            <div>
+                <label htmlFor='destinationAirport'>
+                        
+                    Destination Airport
+                    </label>
+                <AirportDropdown 
+                    name='destinationAirport'
+                    value={endAirportVal} 
+                    onChange={e => setEndAirportVal(e.target.value)} 
+                    filterval={startAirportVal}  />
+                        </div>
+        </div>
 
-        <div>
-       <div>
+        <div className="grid md:grid-cols-6 md:gap-3">
+            <div className="flex items-center space-x-2">
         
          <input type='checkbox' name='isNonStop' id='isNonStop' />
             <label htmlFor='isNonStop'>
@@ -66,27 +84,38 @@ export default function FlightPredictForm(props) {
                 Non stop flight?
             </label>
         </div>
-          <div>
+        <div className="flex items-center space-x-2">
         <input type='checkbox' name='isBasicEconomy' id='isBasicEconomy'  />
             <label htmlFor='isBasicEconomy'>
                 
                 Basic Economy?
             </label>
         </div>
-          <div>
+        <div className="flex items-center space-x-2">
             <input type='checkbox' name='isRefundable' id='isRefundable' />
             <label htmlFor='isRefundable'>
                
                 Refundable?
             </label>
         </div>
+        <div className="md:col-span-3">
+            <button disabled={predictData.loading} className={`${btnClassName} float-right`} type="submit">{btnLabel}</button>
         </div>
+        </div>
+    </form>
 
-       <button disabled={predictData.loading} className={btnClassName} type="submit">{btnLabel}</button>
-      </form>
-
-      <PredictionResultTable results= {predictData && predictData.predictions} />
-
+   {/* Prediction results with gap */}
+            {predictData.loading ? (
+                <div className="mt-4">Thinking...</div>
+            ) : (
+                <div className="mt-6">
+                    <PredictionResultTable
+                        results={predictData && predictData.predictions}
+                        recommendation={predictData.recommendation}
+                        startAirport={startAirportVal}
+                        endAirport={endAirportVal}
+                    />
+                </div>
+            )} 
     </div>
-  )
 }

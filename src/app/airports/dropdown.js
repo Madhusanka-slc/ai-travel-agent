@@ -3,14 +3,16 @@ import useAPIGetRequest from '@/app/utils/apiClient' // Changed import name
 
 export default function AirportDropdown({name, value, filterval, onChange}) {
   const { data, error, isLoading } = useAPIGetRequest("/airports") // Changed function name
+  console.log("DATA:: ",data)
+  console.log("FilterVal::",filterval)
   
-  if (error) return <select><option> --- Error --- </option></select>
+  if (error) return <select><option>Error</option></select>
   if (isLoading) return <select><option>Loading..</option></select>
   
-  // Fixed filter logic - was using template literal incorrectly
-  const displayData = [...data].filter(x => 
-    `${x.value}`.toLowerCase() !== `${filterval}`.toLowerCase()
-  )
+  const displayData = data.filter(
+    x => x.value.toLowerCase() !== filterval?.toLowerCase()
+  );
+
   
   const handleChange = event => {
     if(onChange) {
@@ -21,7 +23,6 @@ export default function AirportDropdown({name, value, filterval, onChange}) {
   return (
     <select name={name} value={value} onChange={handleChange}>
       {displayData.map((airport, idx) => {
-        // Changed 'checked' to 'selected' and fixed the attribute
         return (
           <option 
             key={idx} 

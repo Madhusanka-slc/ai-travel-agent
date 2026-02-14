@@ -11,3 +11,5 @@ def get_config():
     return _decouple_config
 
 config = get_config()
+
+

@@ -6,6 +6,7 @@ from backend.db.connect import get_db_session, SessionLocal
 
 from backend.db import schemas as db_schemas, utils as db_utils
 from backend.ai import predict
+import json
 
 DEBUG = config("DEBUG", cast=bool, default=False)
 FRONTEND_ORIGINS = config("FRONTEND_ORIGINS", cast=lambda x: [s.strip() for s in x.split(",")], default="http://localhost:3000")
@@ -49,8 +50,15 @@ def write_to_predict(prediction_req:db_schemas.PredictSchema):
     
     destinationAirport=request_data.get("destinationAirport")
     )
+
+    if len(predictions) == 0:
+        return {}
+   
+    recommendation = json.loads(predict.recommended_flight(user_data=request_data, forecast_data=predictions))
+    print("REC::",recommendation)
     return {
-        "prediction": predictions
+        "recommendation":recommendation,
+        "predictions": predictions
     }
 
 
